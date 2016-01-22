@@ -1,0 +1,14 @@
+[package]
+name = "rogulit"
+version = "0.1.0"
+authors = ["verdantred <ww.niittunen@hotmail.com>"]
+
+[[bin]]
+name = "rogulit"
+
+[dependencies]
+piston = "0.16.0"
+piston2d-graphics = "0.12.0"
+pistoncore-glutin_window = "0.20.0"
+piston2d-opengl_graphics = "0.21.0"
+rand = "0.3"
