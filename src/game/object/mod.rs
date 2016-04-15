@@ -17,7 +17,7 @@ impl<'a> Inventory<'a> {
   }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Point<T> {
   pub x: T,
   pub y: T,
@@ -36,18 +36,20 @@ impl Movement {
   }
 }
 
+#[derive(PartialEq)]
 pub enum Direction {
   Up, Down, Left, Right, Still,
 }
 
 pub struct PlayerCharacter<'a> {
+  pub id: &'a str,
   inven: Inventory<'a>,
   health: u32,
   delta_mov: Point<f64>,
   speed: f64,
   strength: u32,
   defense: u32,
-  pub loc: Point<u16>,
+  pub loc: Point<usize>,
   pub mov_dir: Movement,
   movable: bool,
   map: &'a RefCell<Map<'a>>,
@@ -56,10 +58,12 @@ pub struct PlayerCharacter<'a> {
 impl<'a> PlayerCharacter<'a> {
 
   pub fn new(map: &'a RefCell<Map<'a>>) -> PlayerCharacter<'a> {
-    PlayerCharacter {inven: Inventory::new(), health: 5, speed: 0.12f64, strength: 5, defense: 5,
+
+    PlayerCharacter {id: "pl", inven: Inventory::new(), health: 5, speed: 0.12f64, strength: 5, defense: 5,
                     loc: map.borrow_mut().start, mov_dir: Movement::new(), movable: true, map: map,
                     delta_mov: Point {x: 0f64, y: 0f64}}
   }
+
 
   pub fn move_pc(&mut self) {
     let mut new_loc = self.loc;
@@ -86,14 +90,7 @@ impl<'a> PlayerCharacter<'a> {
     }
     else {
       self.delta_mov.x = delta.x.fract();
-      let testx = new_loc.x as f64 + delta.x.trunc();
-      if testx < 0f64 {
-        new_loc.x = 0u16;
-      }
-      else if testx > 24f64 {
-        new_loc.x = 24u16;
-      }
-      else {new_loc.x = testx as u16}
+      new_loc.x = (new_loc.x as i16 + delta.x.trunc() as i16) as usize;
 
     }
     if (delta.y < 1f64) && (delta.y > -1f64) {
@@ -101,22 +98,14 @@ impl<'a> PlayerCharacter<'a> {
     }
     else {
       self.delta_mov.y = delta.y.fract();
-      let testy = new_loc.y as f64 + delta.y.trunc();
-      if testy < 0f64 {
-        new_loc.y = 0u16;
-      }
-      else if testy > 24f64 {
-        new_loc.y = 24u16;
-      }
-      else {new_loc.y = testy as u16}
+      new_loc.y = (new_loc.y as i16 + delta.y.trunc() as i16) as usize;
 
     }
     //if self.mov_dir.up || self.mov_dir.left {
       //println!("{},{}", delta.x, delta.y);
     //}
-
-    if ((new_loc.y != self.loc.y) || (new_loc.x != self.loc.x)) && (!self.map.borrow_mut().is_occupied(new_loc)){
-      self.map.borrow_mut().move_object(self.loc, new_loc);
+    //println!("({},{})", new_loc.x, new_loc.y);
+    if ((new_loc.y != self.loc.y) || (new_loc.x != self.loc.x)) && (self.map.borrow_mut().move_object(self.loc, new_loc)){
       self.loc = new_loc;
     }
   }

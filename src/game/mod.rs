@@ -1,24 +1,25 @@
+extern crate rand;
 extern crate piston;
 extern crate graphics;
 extern crate opengl_graphics;
 
 use std::cell::RefCell;
+use self::rand::distributions::{IndependentSample, Range};
 
 use self::piston::input::*;
 use self::opengl_graphics::{ GlGraphics, OpenGL };
 
 pub mod map;
-mod object;
+pub mod object;
 
 use self::map::Map;
 use self::map::FloorType;
 use self::object::*;
 
-pub const BOUNDS: object::Point<usize> = object::Point {x: 25, y: 25};
+pub const BOUNDS: object::Point<usize> = object::Point {x: 75, y: 75};
 
 pub struct Game<'a> {
   map: Vec<Vec<&'a RefCell<Map<'a>>>>,
-  map_dim: Point<usize>,
   map_indx: Point<usize>,
   pc: PlayerCharacter<'a>,
   esc: bool,
@@ -29,9 +30,24 @@ pub struct Game<'a> {
 impl<'a> Game<'a> {
 
   pub fn new(map: &'a RefCell<Map<'a>>) -> Game<'a> {
-    map.borrow_mut().generate_walls();
-    Game {map: vec![vec![map]], map_dim: Point {x: 25, y: 25}, map_indx: Point {x: 0, y: 0},
+
+    let between = Range::new(0f32, 1f32);
+    let mut rng = rand::thread_rng();
+    let percentile = between.ind_sample(&mut rng);
+    {
+      let mut map_ref = map.borrow_mut();
+      while map_ref.get_room_count() < 3 {
+        map_ref.generate_rooms(percentile);
+      }
+    }
+
+    Game {map: vec![vec![map]], map_indx: Point {x: 0, y: 0},
           pc: PlayerCharacter::new(map), esc: false, gl: GlGraphics::new(OpenGL::V3_2)}
+  }
+
+  pub fn init(& mut self) {
+    let start = self.map[0][0].borrow_mut().start;
+    self.map[0][0].borrow_mut().tilemap[start.x][start.y].pc = Some(self.pc.id);
   }
 
   pub fn check_input(&mut self, inp: Input) {
@@ -92,9 +108,10 @@ impl<'a> Game<'a> {
         const GRAY: [f32; 4] = [0.5, 0.5, 0.5, 1.0];
 
         let square = rectangle::square(0.0, 0.0, 10.0);
-        let (x, y) = (self.pc.loc.x as f64,
-                      self.pc.loc.y as f64);
         let map_ref = self.map[self.map_indx.x][self.map_indx.y].borrow();
+        let (x, y) = (self.pc.loc.x as f64,
+                      (self.pc.loc.y) as f64);
+
 
         self.gl.draw(ren.viewport(), |c, gl| {
             // Clear the screen.
@@ -112,8 +129,9 @@ impl<'a> Game<'a> {
               }
             }
 
-            // Draw a box rotating around the middle of the screen.
-            rectangle(GREEN, square, transform_pc, gl);
+            // Draw the player character
+            ellipse(GREEN, square, transform_pc, gl);
+            //rectangle(GREEN, square, transform_pc, gl);
 
         });
     }

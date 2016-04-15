@@ -12,14 +12,13 @@ use std::cell::RefCell;
 mod game;
 use game::Game;
 use game::map::Map;
-use game::object;
 
 fn main() {
     println!("Hello, world!");
     let opengl = OpenGL::V3_2;
     let window: Window = WindowSettings::new(
             "rogulit",
-            [250, 250]
+            [(game::BOUNDS.x as u32) * 10 , (game::BOUNDS.y as u32) * 10]
         )
         .opengl(opengl)
         .exit_on_esc(true)
@@ -28,6 +27,7 @@ fn main() {
     let map = RefCell::new(Map::new(game::BOUNDS));
 
     let mut new_game = Game::new(&map);
+    new_game.init();
     for e in window.events() {
       match e {
         Event::Update(upd) => {
